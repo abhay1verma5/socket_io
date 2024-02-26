@@ -1,37 +1,123 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Chat APP</title>
-  </head>
-  <body>
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Chat APP</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      background-color: #f0f0f0;
+    }
+    #container {
+      max-width: 600px;
+      margin: 20px auto;
+      padding: 20px;
+      background-color: #fff;
+      border-radius: 5px;
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    }
+    h1 {
+      margin-top: 0;
+    }
+    #messages {
+      margin-top: 2px;
+    }
+    .message {
+      background-color: #e0f2f1;
+      border-radius: 5px;
+      padding: 10px ;
+      margin-bottom: 1px;
+    }
+    .timestamp {
+      font-size: 0.8em;
+      color: red;
+      margin-top: 5px;
+    }
+    .message-text {
+      max-width: 90%; /* Adjust as needed */
+      word-wrap: break-word; /* Ensure long words break and wrap */
+    }
+  </style>
+</head>
+<body>
+  <div id="container">
     <h1>Chatting</h1>
-
-    <input type="text" id="message" placeholder="Enter Message" />
+    <input type="text" id="message" placeholder="Enter Message">
     <button id="sendBtn">Send</button>
-
     <div id="messages"></div>
+  </div>
 
-    <script src="/socket.io/socket.io.js"></script>
-    <script>
-      const socket = io();
-      const sendBtn = document.getElementById("sendBtn");
-      const messageInput = document.getElementById("message");
-      const allMessages = document.getElementById("messages");
+  <script src="/socket.io/socket.io.js"></script>
+  <script>
+    const socket = io();
+    const sendBtn = document.getElementById("sendBtn");
+    const messageInput = document.getElementById("message");
+    const allMessages = document.getElementById("messages");
 
-      socket.on("message", (message) => {
-        const p = document.createElement("p");
-        p.innerText = message;
-        allMessages.appendChild(p);
-      });
+    socket.on("message", (data) => {
+      const { message, timestamp } = data;
+      const messageElement = document.createElement("div");
+      messageElement.classList.add("message");
 
-      sendBtn.addEventListener("click", (e) => {
-        const message = messageInput.value;
+      const messageText = document.createElement("div");
+      messageText.classList.add("message-text");
+      messageText.textContent = message;
+
+      const timestampElement = document.createElement("span");
+      timestampElement.classList.add("timestamp");
+      timestampElement.textContent = formatTimestamp(timestamp);
+
+      messageElement.appendChild(messageText);
+      messageElement.appendChild(timestampElement);
+
+      insertMessageSorted(messageElement);
+    });
+
+    function formatTimestamp(timestamp) {
+      const date = new Date(timestamp);
+      let hours = date.getHours();
+      const ampm = hours >= 12 ? 'PM' : 'AM';
+      hours = hours % 12 || 12; // Convert hours to 12-hour format
+      const minutes = String(date.getMinutes()).padStart(2, '0');
+      return `${hours}:${minutes} ${ampm}`; // Include AM/PM indicator
+    }
+
+    function insertMessageSorted(messageElement) {
+      const messages = allMessages.querySelectorAll('.message');
+      if (messages.length === 0) {
+        allMessages.appendChild(messageElement);
+        return;
+      }
+
+      const firstMessage = messages[0];
+      allMessages.insertBefore(messageElement, firstMessage);
+    }
+
+    // Function to handle sending messages
+    function sendMessage() {
+      const message = messageInput.value.trim();
+      if (message) {
+        const timestamp = Date.now();
         console.log(message);
-        socket.emit("user-message", message);
-      });
-    </script>
-  </body>
+        socket.emit("user-message", { message, timestamp });
+        messageInput.value = "";
+      }
+    }
+
+    // Event listener for clicking the send button
+    sendBtn.addEventListener("click", sendMessage);
+
+    // Event listener for pressing Enter in the message input field
+    messageInput.addEventListener("keypress", (e) => {
+      if (e.key === "Enter") {
+        e.preventDefault(); // Prevent default form submission
+        sendBtn.click(); // Trigger click event on the send button
+      }
+    });
+  </script>
+</body>
 </html>
