@@ -102,7 +102,7 @@
       const message = messageInput.value.trim();
       if (message) {
         const timestamp = Date.now();
-        console.log(message);
+     
         socket.emit("user-message", { message, timestamp });
         messageInput.value = "";
       }
